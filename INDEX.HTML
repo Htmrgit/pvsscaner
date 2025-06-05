@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OCR Camera App</title>
+  <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #2196F3;
+      --background: #f7f9fb;
+      --text-dark: #333;
+      --text-light: #777;
+      --card-bg: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--background);
+      color: var(--text-dark);
+    }
+
+    .app {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    header {
+      text-align: center;
+      padding: 1rem 0;
+      background-color: var(--primary);
+      color: white;
+      border-radius: 0 0 16px 16px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    video, canvas, img {
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 1rem;
+      display: block;
+    }
+
+    .btn {
+      width: 100%;
+      background-color: var(--primary);
+      color: white;
+      padding: 0.9rem;
+      margin-top: 0.6rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #1976d2;
+    }
+
+    .output-box {
+      background-color: var(--card-bg);
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 1rem;
+      min-height: 60px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h2>📷 OCR Camera App</h2>
+    </header>
+
+    <video id="video" autoplay playsinline></video>
+    <button class="btn" onclick="capture()">📸 Capture Photo</button>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="captured" style="display:none;">
+    <button class="btn" onclick="cropImage()">✂️ Crop</button>
+
+    <canvas id="croppedCanvas" style="display:none;"></canvas>
+    <button class="btn" onclick="extractText()">🔍 Extract Text</button>
+    <button class="btn" onclick="copyText()">📋 Copy Text</button>
+
+    <div id="output" class="output-box">📝 Extracted text will appear here...</div>
+
+    <footer>Built with ❤️ by ChatGPT</footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const captured = document.getElementById("captured");
+    const croppedCanvas = document.getElementById("croppedCanvas");
+    const output = document.getElementById("output");
+    let cropper;
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert("Camera access denied."));
+
+    function capture() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+      captured.src = canvas.toDataURL("image/png");
+      captured.style.display = "block";
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(captured, { viewMode: 1 });
+    }
+
+    function cropImage() {
+      if (!cropper) return;
+      const cropped = cropper.getCroppedCanvas();
+      croppedCanvas.width = cropped.width;
+      croppedCanvas.height = cropped.height;
+      const ctx = croppedCanvas.getContext("2d");
+      ctx.drawImage(cropped, 0, 0);
+      croppedCanvas.style.display = "block";
+    }
+
+    function extractText() {
+      output.textContent = "🔄 Extracting text...";
+      Tesseract.recognize(croppedCanvas, 'eng')
+        .then(result => output.textContent = result.data.text || "❌ No text found.")
+        .catch(err => output.textContent = "❌ Error: " + err.message);
+    }
+
+    function copyText() {
+      const text = output.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Text copied to clipboard!");
+      });
+    }
+  </script>
+</body>
+</html>
