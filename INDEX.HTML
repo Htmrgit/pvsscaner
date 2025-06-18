@@ -1,162 +1,1225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OCR Camera App</title>
-  <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet"/>
-  <style>
-    :root {
-      --primary: #2196F3;
-      --background: #f7f9fb;
-      --text-dark: #333;
-      --text-light: #777;
-      --card-bg: #fff;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PVS PayMatch - Payment Matching Software</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" xintegrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0x30z6J0pB3t0qC6B2n/b4tVvL1c5E8d/2p/6KjD8t3e3/6F6/C2J6/E1Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Custom scrollbar for light theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0e0e0; /* Track color */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8B5CF6; /* Thumb color (Accent) */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7C3AED; /* Darker accent on hover */
+        }
 
-    * {
-      box-sizing: border-box;
-    }
+        /* Set Inter font globally */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
 
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: var(--background);
-      color: var(--text-dark);
-    }
+        /* Styles for the CSV preview modal/area and new date picker modal */
+        .app-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
 
-    .app {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
+        .app-modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            max-height: 90%;
+            overflow: hidden; /* For scrollable content inside */
+            display: flex;
+            flex-direction: column;
+        }
 
-    header {
-      text-align: center;
-      padding: 1rem 0;
-      background-color: var(--primary);
-      color: white;
-      border-radius: 0 0 16px 16px;
-    }
+        .csv-preview-table-container {
+            flex-grow: 1;
+            overflow: auto; /* Make table scrollable */
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 0.5rem;
+        }
 
-    h2 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
+        .csv-preview-table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem; /* Smaller font for dense table */
+        }
 
-    video, canvas, img {
-      width: 100%;
-      border-radius: 12px;
-      margin-top: 1rem;
-      display: block;
-    }
+        .csv-preview-table-container th,
+        .csv-preview-table-container td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+            white-space: nowrap; /* Prevent wrapping in preview table */
+        }
 
-    .btn {
-      width: 100%;
-      background-color: var(--primary);
-      color: white;
-      padding: 0.9rem;
-      margin-top: 0.6rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
+        .csv-preview-table-container th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #4b5563;
+            position: sticky;
+            top: 0;
+        }
 
-    .btn:hover {
-      background-color: #1976d2;
-    }
-
-    .output-box {
-      background-color: var(--card-bg);
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      font-size: 1rem;
-      min-height: 60px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 0.85rem;
-      color: var(--text-light);
-    }
-  </style>
+        /* Ensure main content area does not cause horizontal overflow */
+        main {
+            flex-grow: 1;
+            overflow-y: auto; /* Allow vertical scrolling */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+    </style>
 </head>
-<body>
-  <div class="app">
-    <header>
-      <h2>📷 OCR Camera App</h2>
-    </header>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex antialiased">
 
-    <video id="video" autoplay playsinline></video>
-    <button class="btn" onclick="capture()">📸 Capture Photo</button>
+    <!-- Left Sidebar Navigation -->
+    <aside class="w-64 bg-gray-200 p-4 shadow-lg flex flex-col rounded-r-xl">
+        <div class="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center p-2 rounded-lg bg-gray-300">
+            <i class="fas fa-coins text-purple-600 mr-3"></i>
+            PVS PayMatch
+        </div>
 
-    <canvas id="canvas" style="display:none;"></canvas>
-    <img id="captured" style="display:none;">
-    <button class="btn" onclick="cropImage()">✂️ Crop</button>
+        <nav class="space-y-4 flex-grow">
+            <!-- Dashboard Button -->
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 hover:bg-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-target="dashboard">
+                <i class="fas fa-tachometer-alt mr-3 text-lg"></i>
+                <span class="text-lg">Dashboard</span>
+            </button>
 
-    <canvas id="croppedCanvas" style="display:none;"></canvas>
-    <button class="btn" onclick="extractText()">🔍 Extract Text</button>
-    <button class="btn" onclick="copyText()">📋 Copy Text</button>
+            <!-- Payments Entry Button -->
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 hover:bg-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-target="payments-entry">
+                <i class="fas fa-file-invoice mr-3 text-lg"></i>
+                <span class="text-lg">Bill Entry</span>
+            </button>
 
-    <div id="output" class="output-box">📝 Extracted text will appear here...</div>
+            <!-- Received Payments Button (Combined CSV Upload & Manual) -->
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 hover:bg-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-target="received-payments">
+                <i class="fas fa-hand-holding-usd mr-3 text-lg"></i>
+                <span class="text-lg">Received Payments</span>
+            </button>
 
-    <footer>Built with ❤️ by ChatGPT</footer>
-  </div>
+            <!-- Payments Match Button -->
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 hover:bg-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-target="payments-match">
+                <i class="fas fa-link mr-3 text-lg"></i>
+                <span class="text-lg">Payments Match</span>
+            </button>
 
-  <script src="https://cdn.jsdelivr.net/npm/cropperjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
-  <script>
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const captured = document.getElementById("captured");
-    const croppedCanvas = document.getElementById("croppedCanvas");
-    const output = document.getElementById("output");
-    let cropper;
+            <!-- Reports Button -->
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 hover:bg-gray-300 hover:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500" data-target="reports">
+                <i class="fas fa-chart-bar mr-3 text-lg"></i>
+                <span class="text-lg">Reports</span>
+            </button>
+        </nav>
 
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => video.srcObject = stream)
-      .catch(err => alert("Camera access denied."));
+        <!-- Reset Data Button -->
+        <div class="mt-auto pt-4 border-t border-gray-300">
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500" data-target="reset-data">
+                <i class="fas fa-sync-alt mr-3 text-lg"></i>
+                <span class="text-lg">Reset All Data</span>
+            </button>
+        </div>
 
-    function capture() {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-      captured.src = canvas.toDataURL("image/png");
-      captured.style.display = "block";
-      if (cropper) cropper.destroy();
-      cropper = new Cropper(captured, { viewMode: 1 });
-    }
+        <!-- Exit Button -->
+        <div class="mt-2 pt-4 border-t border-gray-300">
+            <button class="nav-button w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 hover:bg-gray-300 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500" data-target="exit">
+                <i class="fas fa-sign-out-alt mr-3 text-lg"></i>
+                <span class="text-lg">Exit</span>
+            </button>
+        </div>
+    </aside>
 
-    function cropImage() {
-      if (!cropper) return;
-      const cropped = cropper.getCroppedCanvas();
-      croppedCanvas.width = cropped.width;
-      croppedCanvas.height = cropped.height;
-      const ctx = croppedCanvas.getContext("2d");
-      ctx.drawImage(cropped, 0, 0);
-      croppedCanvas.style.display = "block";
-    }
+    <!-- Main Content Area -->
+    <main class="flex-1 p-8 flex flex-col items-center justify-center min-h-[700px]">
 
-    function extractText() {
-      output.textContent = "🔄 Extracting text...";
-      Tesseract.recognize(croppedCanvas, 'eng')
-        .then(result => output.textContent = result.data.text || "❌ No text found.")
-        .catch(err => output.textContent = "❌ Error: " + err.message);
-    }
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section w-full max-w-4xl bg-white p-8 rounded-xl shadow-lg transition-opacity duration-300 ease-in-out opacity-100">
+            <h2 class="text-3xl font-bold text-purple-600 mb-6 text-center">
+                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+            </h2>
+            <p class="text-gray-700 mb-8 text-center">Welcome to your payment matching dashboard. Here you can see a quick overview of your key metrics.</p>
 
-    function copyText() {
-      const text = output.textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        alert("✅ Text copied to clipboard!");
-      });
-    }
-  </script>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card 1: Total Payments (Bills) -->
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <i class="fas fa-file-invoice text-5xl text-blue-600 mb-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Total Bill Entries</h3>
+                    <p class="text-4xl font-bold text-gray-900" id="totalBillEntries">0</p>
+                    <p class="text-sm text-gray-600 mt-1">Payments to be received</p>
+                </div>
+
+                <!-- Card 2: Total Received Amounts -->
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <i class="fas fa-hand-holding-usd text-5xl text-green-600 mb-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Total Received Payments</h3>
+                    <p class="text-4xl font-bold text-gray-900" id="totalReceivedAmounts">0</p>
+                    <p class="text-sm text-gray-600 mt-1">Payments collected</p>
+                </div>
+
+                <!-- Card 3: Matched Payments -->
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <i class="fas fa-check-circle text-5xl text-purple-600 mb-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Matched Payments</h3>
+                    <p class="text-4xl font-bold text-gray-900" id="matchedPaymentsCount">0</p>
+                    <p class="text-sm text-gray-600 mt-1">Successfully reconciled</p>
+                </div>
+
+                <!-- Card 4: Unmatched Bill Entries -->
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-600 mb-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Unmatched Bills</h3>
+                    <p class="text-4xl font-bold text-gray-900" id="unmatchedBillEntries">0</p>
+                    <p class="text-sm text-gray-600 mt-1">Requires attention</p>
+                </div>
+
+                <!-- Card 5: Unmatched Received -->
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <i class="fas fa-question-circle text-5xl text-yellow-600 mb-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Unmatched Received</h3>
+                    <p class="text-4xl font-bold text-gray-900" id="unmatchedReceivedAmounts">0</p>
+                    <p class="text-sm text-gray-600 mt-1">Unidentified receipts</p>
+                </div>
+
+                <!-- Card 6: Total Value Matched -->
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <i class="fas fa-money-check-alt text-5xl text-teal-600 mb-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Total Value Matched</h3>
+                    <p class="text-4xl font-bold text-gray-900" id="totalValueMatched">₹0.00</p>
+                    <p class="text-sm text-gray-600 mt-1">Reconciled amount</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Payments Entry Section -->
+        <section id="payments-entry" class="content-section hidden w-full max-w-2xl bg-white p-8 rounded-xl shadow-lg transition-opacity duration-300 ease-in-out opacity-0">
+            <h2 class="text-3xl font-bold text-purple-600 mb-6 text-center">
+                <i class="fas fa-file-invoice mr-2"></i> Bill Entry
+            </h2>
+            <form id="bill-entry-form" class="space-y-4">
+                <div>
+                    <label for="bill-no" class="block text-gray-700 text-sm font-semibold mb-2">Bill Number</label>
+                    <input type="text" id="bill-no" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" placeholder="e.g., INV001" required>
+                </div>
+                <div>
+                    <label for="bill-amount" class="block text-gray-700 text-sm font-semibold mb-2">Amount</label>
+                    <input type="number" id="bill-amount" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" placeholder="e.g., 125.00" required step="0.01">
+                </div>
+                <div>
+                    <label for="bill-date" class="block text-gray-700 text-sm font-semibold mb-2">Date</label>
+                    <input type="date" id="bill-date" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" required>
+                </div>
+                <button type="submit" class="w-full bg-purple-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors">
+                    <i class="fas fa-save mr-2"></i> Save Bill Entry
+                </button>
+            </form>
+
+            <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">All Bill Entries</h3>
+            <div class="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Bill No.</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bill-entries-table-body" class="divide-y divide-gray-300 text-gray-900">
+                        <!-- Bill entries will be loaded here by JavaScript -->
+                        <tr><td colspan="5" class="text-center py-4 text-gray-500">No bill entries yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Received Payments Section (CSV Upload & Manual Entry) -->
+        <section id="received-payments" class="content-section hidden w-full max-w-4xl bg-white p-8 rounded-xl shadow-lg transition-opacity duration-300 ease-in-out opacity-0">
+            <h2 class="text-3xl font-bold text-purple-600 mb-6 text-center">
+                <i class="fas fa-hand-holding-usd mr-2"></i> Received Payments
+            </h2>
+
+            <!-- Manual Received Payment Entry Form -->
+            <div class="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-sm">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <i class="fas fa-keyboard mr-2"></i> Manually Add Received Payment
+                </h3>
+                <form id="manual-received-form" class="space-y-4">
+                    <div>
+                        <label for="received-amount-manual" class="block text-gray-700 text-sm font-semibold mb-2">Amount</label>
+                        <input type="number" id="received-amount-manual" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" placeholder="e.g., 125.00" required step="0.01">
+                    </div>
+                    <div>
+                        <label for="received-date-manual" class="block text-gray-700 text-sm font-semibold mb-2">Date</label>
+                        <input type="date" id="received-date-manual" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" required>
+                    </div>
+                    <div>
+                        <label for="received-description-manual" class="block text-gray-700 text-sm font-semibold mb-2">Description / Source</label>
+                        <input type="text" id="received-description-manual" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" placeholder="e.g., Bank Transfer, PayPal, etc.">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">Quick Sources:</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="source-button bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-sm" data-source="Paytm"><i class="fas fa-wallet mr-1"></i> Paytm</button>
+                            <button type="button" class="source-button bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 text-sm" data-source="UPI"><i class="fas fa-exchange-alt mr-1"></i> UPI</button>
+                            <button type="button" class="source-button bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600 text-sm" data-source="Google Pay"><i class="fab fa-google-pay mr-1"></i> Google Pay</button>
+                            <button type="button" class="source-button bg-purple-500 text-white px-3 py-1 rounded-md hover:bg-purple-600 text-sm" data-source="Restaurant App"><i class="fas fa-utensils mr-1"></i> Restaurant App</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-purple-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors">
+                        <i class="fas fa-plus mr-2"></i> Add Received Payment
+                    </button>
+                </form>
+            </div>
+
+            <!-- CSV File Upload -->
+            <div class="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-sm">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <i class="fas fa-file-csv mr-2"></i> Upload Received Payments from CSV
+                </h3>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500 hover:border-purple-500 hover:text-purple-600 transition-colors cursor-pointer">
+                    <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+                    <label for="csv-file-input" class="block">
+                        <i class="fas fa-cloud-upload-alt text-5xl mb-4"></i>
+                        <p class="text-xl font-semibold">Drag & Drop your CSV file here</p>
+                        <p class="text-sm mt-2">or click to browse</p>
+                        <p class="text-xs text-gray-400 mt-2">CSV should contain "Amount", "Transaction_Date" (or "Updated_Date"), and "Transaction_ID" columns.</p>
+                    </label>
+                </div>
+                <button id="preview-csv-button" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold text-lg mt-6 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <i class="fas fa-search-plus mr-2"></i> Preview CSV
+                </button>
+            </div>
+
+            <h3 class="text-xl font-semibold text-gray-700 mt-8 mb-4">All Received Payments</h3>
+            <div class="mb-4">
+                <label for="received-payments-search-amount" class="sr-only">Search by Amount</label>
+                <input type="number" id="received-payments-search-amount" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900" placeholder="Search by Amount..." step="0.01">
+            </div>
+            <div class="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Source</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="received-payments-table-body" class="divide-y divide-gray-300 text-gray-900">
+                        <!-- Received payments will be loaded here by JavaScript -->
+                        <tr><td colspan="5" class="text-center py-4 text-gray-500">No received payments yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CSV Preview Modal (Hidden by default) -->
+        <div id="csv-preview-modal" class="app-modal hidden">
+            <div class="app-modal-content">
+                <h2 class="text-2xl font-bold text-gray-900 text-center mb-4">CSV Data Preview</h2>
+                <div class="csv-preview-table-container">
+                    <table id="csv-preview-table">
+                        <!-- CSV data will be loaded here -->
+                    </table>
+                </div>
+                <div class="flex justify-center space-x-4 mt-4">
+                    <button id="import-csv-data-button" class="bg-green-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                        <i class="fas fa-file-import mr-2"></i> Import Data
+                    </button>
+                    <button id="cancel-csv-preview-button" class="bg-red-500 text-white p-3 rounded-lg font-bold text-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                        <i class="fas fa-times mr-2"></i> Close Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Match Section -->
+        <section id="payments-match" class="content-section hidden w-full max-w-4xl bg-white p-8 rounded-xl shadow-lg transition-opacity duration-300 ease-in-out opacity-0">
+            <h2 class="text-3xl font-bold text-purple-600 mb-6 text-center">
+                <i class="fas fa-link mr-2"></i> Payments Match
+            </h2>
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Unmatched Bill Entries</h3>
+                    <div class="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Select</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Bill No.</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Amount</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unmatched-bills-table-body" class="divide-y divide-gray-300 text-gray-900">
+                                <!-- Unmatched bill entries will be loaded here -->
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">No unmatched bill entries.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Unmatched Received Payments</h3>
+                    <div class="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Select</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Amount</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unmatched-received-table-body" class="divide-y divide-gray-300 text-gray-900">
+                                <!-- Unmatched received payments will be loaded here -->
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">No unmatched received payments.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 text-center">
+                <button id="match-selected-button" class="bg-green-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                    <i class="fas fa-check-double mr-2"></i> Match Selected Payments
+                </button>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="content-section hidden w-full max-w-4xl bg-white p-8 rounded-xl shadow-lg transition-opacity duration-300 ease-in-out opacity-0">
+            <h2 class="text-3xl font-bold text-purple-600 mb-6 text-center">
+                <i class="fas fa-chart-bar mr-2"></i> Reports
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Matching Overview</h3>
+                    <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-5xl font-bold text-green-600" id="reportMatchedPercentage">0%</p>
+                            <p class="text-gray-600">Matched Rate</p>
+                        </div>
+                        <div>
+                            <p class="text-5xl font-bold text-red-600" id="reportUnmatchedPercentage">0%</p>
+                            <p class="text-gray-600">Unmatched Rate</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Total Payments Processed (Received)</h3>
+                    <p class="text-5xl font-bold text-purple-600 text-center" id="reportTotalReceived">₹0.00</p>
+                    <p class="text-gray-600 text-center">All time</p>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-lg shadow-md md:col-span-2">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Payment Source Breakdown (Received)</h3>
+                    <!-- Placeholder for a chart (e.g., pie chart) -->
+                    <div class="h-40 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600" id="source-breakdown-chart">
+                        [Graph/Chart Placeholder: Manual vs. CSV]
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reset Data Confirmation Modal -->
+        <section id="reset-data" class="content-section hidden w-full max-w-lg bg-white p-8 rounded-xl shadow-lg text-center transition-opacity duration-300 ease-in-out opacity-0">
+            <h2 class="text-3xl font-bold text-red-600 mb-6">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Reset All Data
+            </h2>
+            <p class="text-gray-700 mb-8">
+                This action will permanently delete ALL your bill entries, received payments, and match data. This cannot be undone.
+                <br><br>Are you absolutely sure you want to proceed?
+            </p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-reset-button" class="bg-red-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                    <i class="fas fa-trash-alt mr-2"></i> Yes, Delete All Data
+                </button>
+                <button id="cancel-reset-button" class="bg-gray-500 text-white p-3 rounded-lg font-bold text-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors">
+                    <i class="fas fa-times-circle mr-2"></i> Cancel
+                </button>
+            </div>
+        </section>
+
+        <!-- Exit Section -->
+        <section id="exit" class="content-section hidden w-full max-w-lg bg-white p-8 rounded-xl shadow-lg text-center transition-opacity duration-300 ease-in-out opacity-0">
+            <h2 class="text-3xl font-bold text-purple-600 mb-6">
+                <i class="fas fa-sign-out-alt mr-2"></i> Exit Application
+            </h2>
+            <p class="text-gray-700 mb-8">Are you sure you want to exit the application?</p>
+            <div class="flex justify-center space-x-4">
+                <button class="bg-red-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors" onclick="window.close()">
+                    <i class="fas fa-power-off mr-2"></i> Confirm Exit
+                </button>
+                <button class="bg-gray-500 text-white p-3 rounded-lg font-bold text-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors" onclick="history.back()">
+                    <i class="fas fa-times-circle mr-2"></i> Cancel
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Date Picker Modal -->
+    <div id="date-picker-modal" class="app-modal hidden">
+        <div class="app-modal-content w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Select Default Date</h2>
+            <p class="text-gray-700 mb-6">This date will pre-fill forms for convenience.</p>
+            <input type="date" id="default-date-input" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 outline-none transition-colors text-gray-900 mb-6" required>
+            <button id="set-default-date-button" class="w-full bg-purple-600 text-white p-3 rounded-lg font-bold text-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors">
+                <i class="fas fa-check-circle mr-2"></i> Set Date
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global data arrays for local storage
+        let paymentEntries = []; // Bills you need to receive
+        let receivedPayments = []; // Actual payments received
+        let tempCsvParsedData = []; // Temporary storage for CSV data before import
+        let defaultSelectedDate = ''; // Stores the default date from the pop-up
+
+        // Function to generate a unique ID
+        const generateUniqueId = () => '_' + Math.random().toString(36).substr(2, 9);
+
+        // --- Local Storage Functions ---
+        const saveAllData = () => {
+            localStorage.setItem('pvsPayMatch_paymentEntries', JSON.stringify(paymentEntries));
+            localStorage.setItem('pvsPayMatch_receivedPayments', JSON.stringify(receivedPayments));
+            localStorage.setItem('pvsPayMatch_defaultDate', defaultSelectedDate); // Save default date
+            updateDashboardAndReports(); // Update UI after saving
+        };
+
+        const loadAllData = () => {
+            const storedPaymentEntries = localStorage.getItem('pvsPayMatch_paymentEntries');
+            const storedReceivedPayments = localStorage.getItem('pvsPayMatch_receivedPayments');
+            const storedDefaultDate = localStorage.getItem('pvsPayMatch_defaultDate');
+
+            if (storedPaymentEntries) {
+                paymentEntries = JSON.parse(storedPaymentEntries);
+            }
+            if (storedReceivedPayments) {
+                receivedPayments = JSON.parse(storedReceivedPayments);
+            }
+            if (storedDefaultDate) {
+                defaultSelectedDate = storedDefaultDate;
+            }
+        };
+
+        // --- UI Rendering Functions ---
+
+        // Render Bill Entries Table
+        const renderBillEntries = () => {
+            const tableBody = document.getElementById('bill-entries-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            if (paymentEntries.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No bill entries yet.</td></tr>';
+                return;
+            }
+
+            paymentEntries.forEach(entry => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-200 transition-colors';
+                const statusColor = entry.status === 'matched' ? 'text-green-600' : 'text-red-600';
+                const actionsHtml = entry.status === 'unmatched' ?
+                    `<button class="bg-blue-500 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-600 mr-2" onclick="editBillEntry('${entry.id}')"><i class="fas fa-edit mr-1"></i>Edit</button>` : '';
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.billNo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-green-600">₹${entry.amount.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${entry.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap ${statusColor}">${entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${actionsHtml}
+                        <button class="bg-red-500 text-white text-sm px-3 py-1 rounded-md hover:bg-red-600" onclick="deleteBillEntry('${entry.id}')"><i class="fas fa-trash mr-1"></i>Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+
+        // Render Received Payments Table with optional amount filter
+        const renderReceivedPayments = (filterAmount = '') => {
+            const tableBody = document.getElementById('received-payments-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            // Filter payments if a filterAmount is provided
+            const filteredPayments = receivedPayments.filter(payment => {
+                if (filterAmount === '') return true; // No filter, show all
+                // Convert both to string to check for partial amount match
+                return payment.amount.toFixed(2).includes(parseFloat(filterAmount).toFixed(2));
+            });
+
+            if (filteredPayments.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No received payments matching criteria.</td></tr>';
+                return;
+            }
+
+            filteredPayments.forEach(payment => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-200 transition-colors';
+                const statusColor = payment.status === 'matched' ? 'text-green-600' : 'text-red-600';
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-green-600">₹${payment.amount.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${payment.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${payment.source}</td>
+                    <td class="px-6 py-4 whitespace-nowrap ${statusColor}">${payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="bg-red-500 text-white text-sm px-3 py-1 rounded-md hover:bg-red-600" onclick="deleteReceivedPayment('${payment.id}')"><i class="fas fa-trash mr-1"></i>Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+
+        // Render Unmatched Payments for Matching Section
+        const renderUnmatchedForMatching = () => {
+            const unmatchedBillsTableBody = document.getElementById('unmatched-bills-table-body');
+            const unmatchedReceivedTableBody = document.getElementById('unmatched-received-table-body');
+
+            unmatchedBillsTableBody.innerHTML = '';
+            unmatchedReceivedTableBody.innerHTML = '';
+
+            // Filter for truly unmatched items that couldn't be auto-matched
+            const unmatchedBills = paymentEntries.filter(entry => entry.status === 'unmatched');
+            const unmatchedReceived = receivedPayments.filter(payment => payment.status === 'unmatched');
+
+            if (unmatchedBills.length === 0) {
+                unmatchedBillsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">No unmatched bill entries.</td></tr>';
+            } else {
+                unmatchedBills.forEach(entry => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-200 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-4 py-2 whitespace-nowrap">
+                            <input type="radio" name="select-bill" data-id="${entry.id}" class="form-radio text-purple-500 rounded border-gray-300 bg-gray-100 focus:ring-purple-500">
+                        </td>
+                        <td class="px-4 py-2 whitespace-nowrap">${entry.billNo}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-green-600">₹${entry.amount.toFixed(2)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap">${entry.date}</td>
+                    `;
+                    unmatchedBillsTableBody.appendChild(row);
+                });
+            }
+
+            if (unmatchedReceived.length === 0) {
+                unmatchedReceivedTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">No unmatched received payments.</td></tr>';
+            } else {
+                unmatchedReceived.forEach(payment => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-200 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-4 py-2 whitespace-nowrap">
+                            <input type="radio" name="select-received" data-id="${payment.id}" class="form-radio text-purple-500 rounded border-gray-300 bg-gray-100 focus:ring-purple-500">
+                        </td>
+                        <td class="px-4 py-2 whitespace-nowrap text-green-600">₹${payment.amount.toFixed(2)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap">${payment.date}</td>
+                        <td class="px-4 py-2 whitespace-nowrap">${payment.source}</td>
+                    `;
+                    unmatchedReceivedTableBody.appendChild(row);
+                });
+            }
+        };
+
+        // Update Dashboard and Reports statistics
+        const updateDashboardAndReports = () => {
+            // Dashboard
+            document.getElementById('totalBillEntries').textContent = paymentEntries.length;
+            document.getElementById('totalReceivedAmounts').textContent = receivedPayments.length;
+
+            const matchedBills = paymentEntries.filter(e => e.status === 'matched');
+            // const matchedReceived = receivedPayments.filter(e => e.status === 'matched'); // Should match count of matchedBills if logic is correct
+            document.getElementById('matchedPaymentsCount').textContent = matchedBills.length;
+
+            const unmatchedBills = paymentEntries.filter(e => e.status === 'unmatched');
+            const unmatchedReceived = receivedPayments.filter(e => e.status === 'unmatched');
+            document.getElementById('unmatchedBillEntries').textContent = unmatchedBills.length;
+            document.getElementById('unmatchedReceivedAmounts').textContent = unmatchedReceived.length;
+
+            const totalValueMatched = matchedBills.reduce((sum, entry) => sum + entry.amount, 0);
+            document.getElementById('totalValueMatched').textContent = `₹${totalValueMatched.toFixed(2)}`;
+
+            // Reports
+            const totalBillCount = paymentEntries.length;
+            const totalReceivedCount = receivedPayments.length;
+            const totalMatchedCount = matchedBills.length;
+
+            const matchedPercentage = totalReceivedCount > 0 ? ((totalMatchedCount / totalReceivedCount) * 100).toFixed(2) : 0;
+            const unmatchedPercentage = totalReceivedCount > 0 ? (((totalReceivedCount - totalMatchedCount) / totalReceivedCount) * 100).toFixed(2) : 0;
+
+            document.getElementById('reportMatchedPercentage').textContent = `${matchedPercentage}%`;
+            document.getElementById('reportUnmatchedPercentage').textContent = `${unmatchedPercentage}%`;
+            document.getElementById('reportTotalReceived').textContent = `₹${receivedPayments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}`;
+
+            // Source Breakdown for Received Payments
+            const sourceCounts = receivedPayments.reduce((acc, curr) => {
+                acc[curr.source] = (acc[curr.source] || 0) + 1;
+                return acc;
+            }, {});
+
+            const sourceBreakdownHtml = Object.keys(sourceCounts).map(source => `
+                <div class="flex justify-between items-center text-gray-700">
+                    <span>${source}</span>
+                    <span class="font-bold">${sourceCounts[source]}</span>
+                </div>
+            `).join('');
+            document.getElementById('source-breakdown-chart').innerHTML = sourceBreakdownHtml || '<p class="text-center">No received payments data.</p>';
+        };
+
+
+        // --- Auto-Matching Logic ---
+        const autoMatchPayments = () => {
+            let matchedCount = 0;
+            const unmatchedBills = paymentEntries.filter(entry => entry.status === 'unmatched');
+            const unmatchedReceived = receivedPayments.filter(payment => payment.status === 'unmatched');
+
+            // Create a temporary mutable copy of unmatchedReceived for iterative matching
+            const availableReceived = [...unmatchedReceived];
+
+            unmatchedBills.forEach(bill => {
+                // Find an exactly matching received payment
+                const matchedReceivedIndex = availableReceived.findIndex(received => Math.abs(bill.amount - received.amount) < 0.001); // Use tolerance for float comparison
+
+                if (matchedReceivedIndex !== -1) {
+                    const received = availableReceived[matchedReceivedIndex];
+
+                    // Mark both as matched
+                    bill.status = 'matched';
+                    bill.matchedReceivedId = received.id;
+                    received.status = 'matched';
+                    received.matchedPaymentId = bill.id;
+
+                    // Remove the matched received payment from available list
+                    availableReceived.splice(matchedReceivedIndex, 1);
+                    matchedCount++;
+                }
+            });
+
+            if (matchedCount > 0) {
+                saveAllData(); // Save changes after auto-matching
+                renderBillEntries();
+                renderReceivedPayments();
+                renderUnmatchedForMatching();
+                console.log(`Auto-matched ${matchedCount} payments.`);
+            }
+        };
+
+
+        // --- Event Handlers and Core Logic ---
+
+        // Handle Bill Entry Form Submission
+        document.getElementById('bill-entry-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const billNo = document.getElementById('bill-no').value.trim();
+            const billAmount = parseFloat(document.getElementById('bill-amount').value);
+            const billDate = document.getElementById('bill-date').value;
+
+            if (billNo && !isNaN(billAmount) && billAmount > 0 && billDate) {
+                // Check for duplicate bill number
+                if (paymentEntries.some(entry => entry.billNo === billNo)) {
+                    alert('Bill number already exists. Please use a unique bill number.');
+                    return;
+                }
+
+                const newBillEntry = {
+                    id: generateUniqueId(),
+                    billNo: billNo,
+                    amount: billAmount,
+                    date: billDate,
+                    status: 'unmatched',
+                    matchedReceivedId: null
+                };
+                paymentEntries.push(newBillEntry);
+                saveAllData();
+                renderBillEntries();
+                renderUnmatchedForMatching();
+                e.target.reset(); // Clear form
+                // Pre-fill date again after reset if defaultSelectedDate exists
+                if (defaultSelectedDate) {
+                    document.getElementById('bill-date').value = defaultSelectedDate;
+                }
+                autoMatchPayments(); // Attempt auto-match after new bill entry
+            } else {
+                alert('Please fill in all bill entry fields correctly.');
+            }
+        });
+
+        // Delete Bill Entry
+        const deleteBillEntry = (id) => {
+            if (confirm('Are you sure you want to delete this bill entry?')) {
+                paymentEntries = paymentEntries.filter(entry => entry.id !== id);
+                // Also unmatch any received payments that were linked to this bill
+                receivedPayments.forEach(rp => {
+                    if (rp.matchedPaymentId === id) {
+                        rp.matchedPaymentId = null;
+                        rp.status = 'unmatched';
+                    }
+                });
+                saveAllData();
+                renderBillEntries();
+                renderReceivedPayments();
+                renderUnmatchedForMatching();
+            }
+        };
+
+        // Edit Bill Entry (Placeholder for now, could open a modal or inline edit)
+        const editBillEntry = (id) => {
+            alert(`Edit functionality for Bill Entry ID: ${id} (Not fully implemented)`);
+            // In a real app, you would populate the form with existing data and allow update
+            const entryToEdit = paymentEntries.find(entry => entry.id === id);
+            if (entryToEdit) {
+                document.getElementById('bill-no').value = entryToEdit.billNo;
+                document.getElementById('bill-amount').value = entryToEdit.amount;
+                document.getElementById('bill-date').value = entryToEdit.date;
+                // You would typically change the "Save" button to "Update" and handle the update logic
+            }
+        };
+
+
+        // Handle Manual Received Payment Form Submission
+        document.getElementById('manual-received-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const receivedAmount = parseFloat(document.getElementById('received-amount-manual').value);
+            const receivedDate = document.getElementById('received-date-manual').value;
+            const receivedDescription = document.getElementById('received-description-manual').value.trim() || 'Manual Entry';
+
+            if (!isNaN(receivedAmount) && receivedAmount > 0 && receivedDate) {
+                const newReceivedPayment = {
+                    id: generateUniqueId(),
+                    amount: receivedAmount,
+                    date: receivedDate,
+                    source: receivedDescription,
+                    status: 'unmatched',
+                    matchedPaymentId: null
+                };
+                receivedPayments.push(newReceivedPayment);
+                saveAllData();
+                renderReceivedPayments();
+                renderUnmatchedForMatching();
+                e.target.reset();
+                // Pre-fill date again after reset if defaultSelectedDate exists
+                if (defaultSelectedDate) {
+                    document.getElementById('received-date-manual').value = defaultSelectedDate;
+                }
+                autoMatchPayments(); // Attempt auto-match after new received payment
+            } else {
+                alert('Please fill in all manual received payment fields correctly.');
+            }
+        });
+
+        // Event listener for source buttons
+        document.querySelectorAll('.source-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                document.getElementById('received-description-manual').value = e.target.dataset.source;
+            });
+        });
+
+        // Delete Received Payment
+        const deleteReceivedPayment = (id) => {
+            if (confirm('Are you sure you want to delete this received payment?')) {
+                // Find the received payment to delete
+                const deletedPayment = receivedPayments.find(p => p.id === id);
+                if (deletedPayment && deletedPayment.status === 'matched' && deletedPayment.matchedPaymentId) {
+                    // If matched, unmatch the corresponding bill entry
+                    const billEntry = paymentEntries.find(be => be.id === deletedPayment.matchedPaymentId);
+                    if (billEntry) {
+                        billEntry.status = 'unmatched';
+                        billEntry.matchedReceivedId = null;
+                    }
+                }
+                receivedPayments = receivedPayments.filter(payment => payment.id !== id);
+                saveAllData();
+                renderReceivedPayments();
+                renderBillEntries(); // Bill entries might have changed status
+                renderUnmatchedForMatching();
+            }
+        };
+
+        // CSV Preview Logic
+        let currentCsvFilename = ''; // To store the filename for source
+
+        document.getElementById('preview-csv-button').addEventListener('click', () => {
+            const fileInput = document.getElementById('csv-file-input');
+            const file = fileInput.files[0];
+
+            if (file) {
+                currentCsvFilename = file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    displayCsvPreview(text, currentCsvFilename);
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Please select a CSV file to preview.');
+            }
+        });
+
+        const displayCsvPreview = (csvText, filename) => {
+            const lines = csvText.trim().split('\n');
+            if (lines.length === 0) {
+                alert('The selected CSV file is empty.');
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim()); // Keep original case for display
+            const lowerCaseHeaders = headers.map(h => h.toLowerCase());
+            const amountIndex = lowerCaseHeaders.indexOf('amount');
+            const transactionIdIndex = lowerCaseHeaders.indexOf('transaction_id');
+            const transactionDateIndex = lowerCaseHeaders.indexOf('transaction_date');
+            const updatedDateIndex = lowerCaseHeaders.indexOf('updated_date');
+
+            if (amountIndex === -1) {
+                alert('CSV file must contain an "Amount" column.');
+                return;
+            }
+
+            const previewTable = document.getElementById('csv-preview-table');
+            previewTable.innerHTML = ''; // Clear previous preview
+
+            // Create table headers dynamically from CSV headers
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            previewTable.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            tempCsvParsedData = []; // Clear temporary data
+
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                if (parts.length > 0 && lines[i].trim() !== '') { // Ensure row is not empty
+                    const rowData = {};
+                    headers.forEach((header, index) => {
+                        rowData[header] = parts[index] ? parts[index].trim() : '';
+                    });
+
+                    const amount = parseFloat(rowData[headers[amountIndex]]);
+                    let date = '';
+                    if (transactionDateIndex !== -1 && rowData[headers[transactionDateIndex]]) {
+                        date = rowData[headers[transactionDateIndex]];
+                    } else if (updatedDateIndex !== -1 && rowData[headers[updatedDateIndex]]) {
+                        date = rowData[headers[updatedDateIndex]];
+                    } else {
+                        date = new Date().toISOString().split('T')[0]; // Fallback to current date
+                    }
+
+                    // Use Transaction_ID as the unique ID from CSV. If not found, generate one.
+                    const transactionId = (transactionIdIndex !== -1 && rowData[headers[transactionIdIndex]] && rowData[headers[transactionIdIndex]].trim() !== '') ? rowData[headers[transactionIdIndex]].trim() : generateUniqueId();
+                    const source = `CSV: ${filename}`;
+
+                    if (!isNaN(amount) && amount > 0) {
+                        tempCsvParsedData.push({
+                            id: transactionId,
+                            amount: amount,
+                            date: date,
+                            source: source,
+                            status: 'unmatched',
+                            matchedPaymentId: null,
+                            fullCsvRow: rowData
+                        });
+
+                        const row = document.createElement('tr');
+                        headers.forEach(header => {
+                            const td = document.createElement('td');
+                            td.textContent = rowData[header];
+                            row.appendChild(td);
+                        });
+                        tbody.appendChild(row);
+                    }
+                }
+            }
+            previewTable.appendChild(tbody);
+
+            if (tempCsvParsedData.length === 0) {
+                alert('No valid payment data found in the CSV file for preview or import.');
+                document.getElementById('csv-preview-modal').classList.add('hidden'); // Hide modal if no data
+                return;
+            }
+
+            document.getElementById('csv-preview-modal').classList.remove('hidden');
+        };
+
+        // Import CSV Data from Preview
+        document.getElementById('import-csv-data-button').addEventListener('click', () => {
+            if (tempCsvParsedData.length > 0) {
+                // Check for duplicate transaction IDs before adding
+                const uniqueNewPayments = tempCsvParsedData.filter(newPayment =>
+                    !receivedPayments.some(existingPayment => existingPayment.id === newPayment.id)
+                );
+
+                receivedPayments.push(...uniqueNewPayments);
+                saveAllData();
+                renderReceivedPayments(); // Render with no filter initially
+                renderUnmatchedForMatching();
+                alert(`${uniqueNewPayments.length} payments imported from CSV. ${tempCsvParsedData.length - uniqueNewPayments.length} duplicates skipped.`);
+                document.getElementById('csv-preview-modal').classList.add('hidden');
+                document.getElementById('csv-file-input').value = ''; // Clear file input
+                tempCsvParsedData = []; // Clear temporary data after import
+                autoMatchPayments(); // Attempt auto-match after new data import
+            } else {
+                alert('No data to import from CSV preview.');
+            }
+        });
+
+        // Cancel CSV Preview
+        document.getElementById('cancel-csv-preview-button').addEventListener('click', () => {
+            document.getElementById('csv-preview-modal').classList.add('hidden');
+            document.getElementById('csv-file-input').value = ''; // Clear file input
+            tempCsvParsedData = []; // Clear temporary data
+        });
+
+
+        // Manual Matching Logic (remains for manual override/specific mismatches)
+        document.getElementById('match-selected-button').addEventListener('click', () => {
+            const selectedBillRadio = document.querySelector('input[name="select-bill"]:checked');
+            const selectedReceivedRadio = document.querySelector('input[name="select-received"]:checked');
+
+            if (selectedBillRadio && selectedReceivedRadio) {
+                const billId = selectedBillRadio.dataset.id;
+                const receivedId = selectedReceivedRadio.dataset.id;
+
+                const billEntry = paymentEntries.find(entry => entry.id === billId);
+                const receivedPayment = receivedPayments.find(payment => payment.id === receivedId);
+
+                if (billEntry && receivedPayment) {
+                    // Simple match: check if amounts are exactly equal
+                    if (Math.abs(billEntry.amount - receivedPayment.amount) < 0.001) { // Use tolerance for float comparison
+                        billEntry.status = 'matched';
+                        billEntry.matchedReceivedId = receivedId;
+                        receivedPayment.status = 'matched';
+                        receivedPayment.matchedPaymentId = billId;
+
+                        saveAllData();
+                        renderBillEntries();
+                        renderReceivedPayments(); // Re-render without filter for now
+                        renderUnmatchedForMatching(); // Re-render to clear selections and update lists
+                        alert('Payments matched successfully!');
+                    } else {
+                        alert('Amounts do not exactly match. Please select payments with matching amounts.');
+                    }
+                }
+            } else {
+                alert('Please select one bill entry and one received payment to match.');
+            }
+        });
+
+        // --- Reset Data Logic ---
+        document.getElementById('confirm-reset-button').addEventListener('click', () => {
+            if (confirm('This will permanently delete ALL data. Are you absolutely sure?')) {
+                localStorage.removeItem('pvsPayMatch_paymentEntries');
+                localStorage.removeItem('pvsPayMatch_receivedPayments');
+                localStorage.removeItem('pvsPayMatch_defaultDate'); // Also clear default date
+                paymentEntries = [];
+                receivedPayments = [];
+                defaultSelectedDate = ''; // Reset default date in memory
+                saveAllData(); // Will also trigger dashboard/reports update
+                // Re-render all sections to show empty state
+                renderBillEntries();
+                renderReceivedPayments();
+                renderUnmatchedForMatching();
+                alert('All data has been reset.');
+                showSection('dashboard'); // Go back to dashboard after reset
+            }
+        });
+
+        document.getElementById('cancel-reset-button').addEventListener('click', () => {
+            // Go back to the dashboard or previous section
+            showSection('dashboard');
+        });
+
+
+        // --- Date Picker Modal Logic ---
+        const datePickerModal = document.getElementById('date-picker-modal');
+        const defaultDateInput = document.getElementById('default-date-input');
+        const setDefaultDateButton = document.getElementById('set-default-date-button');
+
+        const showDatePickerModal = () => {
+            // Set default date input to today if not already set or loaded
+            if (!defaultDateInput.value) {
+                defaultDateInput.value = new Date().toISOString().split('T')[0];
+            }
+            datePickerModal.classList.remove('hidden');
+        };
+
+        const hideDatePickerModal = () => {
+            datePickerModal.classList.add('hidden');
+        };
+
+        setDefaultDateButton.addEventListener('click', () => {
+            const selectedDate = defaultDateInput.value;
+            if (selectedDate) {
+                defaultSelectedDate = selectedDate;
+                saveAllData(); // Save the default date to local storage
+                hideDatePickerModal();
+                // Apply date to forms immediately
+                if (document.getElementById('bill-date')) {
+                    document.getElementById('bill-date').value = defaultSelectedDate;
+                }
+                if (document.getElementById('received-date-manual')) {
+                    document.getElementById('received-date-manual').value = defaultSelectedDate;
+                }
+            } else {
+                alert('Please select a date.');
+            }
+        });
+
+
+        // --- UI Navigation Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            // Function to show a specific section
+            const showSection = (targetId) => {
+                contentSections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.remove('hidden', 'opacity-0');
+                        section.classList.add('opacity-100');
+                    } else {
+                        section.classList.add('hidden', 'opacity-0');
+                        section.classList.remove('opacity-100');
+                    }
+                });
+
+                navButtons.forEach(button => {
+                    // Remove current active styles
+                    button.classList.remove('bg-gray-300', 'text-purple-700', 'font-semibold', 'border-l-4', 'border-purple-600', 'shadow-md');
+                    // Add default color
+                    button.classList.add('text-gray-800');
+
+                    // Apply active styles if it's the target button AND not the reset button (which has unique styling)
+                    if (button.dataset.target === targetId && targetId !== 'reset-data') {
+                        button.classList.add('bg-gray-300', 'text-purple-700', 'font-semibold', 'border-l-4', 'border-purple-600', 'shadow-md');
+                    } else if (button.dataset.target === targetId && targetId === 'reset-data') {
+                         // Ensure reset button keeps its unique styling even when active
+                         button.classList.add('bg-red-200', 'text-red-700', 'font-semibold', 'border-l-4', 'border-red-600', 'shadow-md');
+                    }
+                });
+
+                // Special handling for content updates when a section is shown
+                if (targetId === 'payments-entry') {
+                    renderBillEntries();
+                    // Pre-fill date when section is shown
+                    if (defaultSelectedDate) {
+                        document.getElementById('bill-date').value = defaultSelectedDate;
+                    }
+                } else if (targetId === 'received-payments') {
+                    // When showing received payments, reset the search filter and render all
+                    document.getElementById('received-payments-search-amount').value = '';
+                    renderReceivedPayments();
+                    // Pre-fill date when section is shown
+                    if (defaultSelectedDate) {
+                        document.getElementById('received-date-manual').value = defaultSelectedDate;
+                    }
+                } else if (targetId === 'payments-match') {
+                    renderUnmatchedForMatching();
+                } else if (targetId === 'dashboard' || targetId === 'reports') {
+                    updateDashboardAndReports();
+                }
+            };
+            window.showSection = showSection; // Make it globally accessible for other event listeners
+
+            // Load data on initial page load
+            loadAllData();
+
+            // Show date picker modal if no default date is set
+            if (!defaultSelectedDate) {
+                showDatePickerModal();
+            } else {
+                // If date is already set, pre-fill forms and proceed to dashboard
+                if (document.getElementById('bill-date')) {
+                    document.getElementById('bill-date').value = defaultSelectedDate;
+                }
+                if (document.getElementById('received-date-manual')) {
+                    document.getElementById('received-date-manual').value = defaultSelectedDate;
+                }
+                autoMatchPayments(); // Run auto-match immediately after loading data if date is set
+                showSection('dashboard');
+            }
+
+
+            // Add click event listeners to navigation buttons
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    showSection(targetId);
+                });
+            });
+
+            // Live Search for Received Payments
+            document.getElementById('received-payments-search-amount').addEventListener('input', (e) => {
+                renderReceivedPayments(e.target.value);
+            });
+
+            // For the CSV file input, listen for the file selection to trigger preview button
+            const csvFileInput = document.getElementById('csv-file-input');
+            const previewCsvButton = document.getElementById('preview-csv-button');
+            if (csvFileInput && previewCsvButton) {
+                csvFileInput.addEventListener('change', () => {
+                    if (csvFileInput.files.length > 0) {
+                        previewCsvButton.textContent = `Preview: ${csvFileInput.files[0].name}`;
+                        previewCsvButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        previewCsvButton.classList.add('bg-purple-600', 'hover:bg-purple-700'); // Change color to indicate readiness
+                    } else {
+                        previewCsvButton.textContent = 'Preview CSV';
+                        previewCsvButton.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                        previewCsvButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    }
+                });
+                 // Basic drag and drop visual feedback
+                const csvUploadDragArea = document.querySelector('#received-payments .border-dashed');
+                if (csvUploadDragArea) {
+                    csvUploadDragArea.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        csvUploadDragArea.classList.add('border-purple-500', 'bg-gray-100');
+                    });
+                    csvUploadDragArea.addEventListener('dragleave', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        csvUploadDragArea.classList.remove('border-purple-500', 'bg-gray-100');
+                    });
+                    csvUploadDragArea.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        csvFileInput.files = e.dataTransfer.files; // Assign dropped files to input
+                        const event = new Event('change'); // Trigger change event
+                        csvFileInput.dispatchEvent(event);
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>
